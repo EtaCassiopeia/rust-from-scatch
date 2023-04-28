@@ -1,6 +1,7 @@
 use std::cell::UnsafeCell;
+use std::ops::Deref;
 
-struct MyCell<T> {
+pub struct MyCell<T> {
     value: UnsafeCell<T>,
 }
 
@@ -20,6 +21,14 @@ impl<T> MyCell<T> {
 
     pub fn set(&self, value: T) {
         unsafe { *self.value.get() = value };
+    }
+}
+
+impl<T> Deref for MyCell<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*self.value.get() }
     }
 }
 
