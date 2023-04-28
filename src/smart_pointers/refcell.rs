@@ -26,11 +26,11 @@ impl<T> RefCell<T> {
         match self.state.get() {
             RefState::Unshared => {
                 self.state.set(RefState::Shared(1));
-                Some(Ref { refcell: self })
+                Some(Ref::new(self))
             }
             RefState::Shared(n) => {
                 self.state.set(RefState::Shared(n + 1));
-                Some(Ref { refcell: self })
+                Some(Ref::new(self))
             }
             RefState::Exclusive => None,
         }
@@ -40,7 +40,7 @@ impl<T> RefCell<T> {
         match self.state.get() {
             RefState::Unshared => {
                 self.state.set(RefState::Exclusive);
-                Some(RefMut { refcell: self })
+                Some(RefMut::new(self))
             }
             _ => None,
         }
@@ -51,9 +51,14 @@ struct Ref<'a, T> {
     refcell: &'a RefCell<T>,
 }
 
+impl<'a, T> Ref<'a, T> {
+    fn new(refcell: &'a RefCell<T>) -> Self {
+        Ref { refcell }
+    }
+}
+
 impl<T> Drop for Ref<'_, T> {
     fn drop(&mut self) {
-        eprintln!("Dropping Ref");
         match self.refcell.state.get() {
             RefState::Shared(1) => self.refcell.state.set(RefState::Unshared),
             RefState::Shared(n) => self.refcell.state.set(RefState::Shared(n - 1)),
@@ -72,6 +77,12 @@ impl<T> Deref for Ref<'_, T> {
 
 struct RefMut<'a, T> {
     refcell: &'a RefCell<T>,
+}
+
+impl<'a, T> RefMut<'a, T> {
+    fn new(refcell: &'a RefCell<T>) -> Self {
+        RefMut { refcell }
+    }
 }
 
 impl<T> Drop for RefMut<'_, T> {
